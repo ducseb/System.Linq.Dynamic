@@ -703,7 +703,8 @@ namespace System.Linq.Dynamic
             typeof(Guid),
             typeof(Math),
             typeof(Convert),
-			typeof(System.Data.Objects.EntityFunctions)
+	    typeof(System.Data.Objects.EntityFunctions),
+	    typeof(System.Data.Entity.DbFunctions)
         };
 
         static readonly Expression trueLiteral = Expression.Constant(true);
