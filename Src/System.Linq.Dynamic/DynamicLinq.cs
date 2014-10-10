@@ -651,6 +651,7 @@ namespace System.Linq.Dynamic
 
         interface IEnumerableSignatures
         {
+            bool Contains(object selector);
             void Where(bool predicate);
             void Any();
             void Any(bool predicate);
@@ -714,13 +715,14 @@ namespace System.Linq.Dynamic
         static readonly string keywordIt = "it";
         static readonly string keywordIif = "iif";
         static readonly string keywordNew = "new";
-
+        static readonly string keywordOuterIt = "outerIt";
         static Dictionary<string, object> keywords;
 
         Dictionary<string, object> symbols;
         IDictionary<string, object> externals;
         Dictionary<Expression, string> literals;
         ParameterExpression it;
+        ParameterExpression outerIt;
         string text;
         int textPos;
         int textLen;
@@ -1199,7 +1201,14 @@ namespace System.Linq.Dynamic
             NextToken();
             return it;
         }
-
+        Expression ParseOuterIt()
+	{
+	  if (outerIt == null)
+	  throw ParseError(Res.NoItInScope);
+	  NextToken();
+	  return outerIt;
+	}
+	
         Expression ParseIif()
         {
             int errorPos = token.pos;
@@ -1411,6 +1420,7 @@ namespace System.Linq.Dynamic
             ParameterExpression outerIt = it;
             ParameterExpression innerIt = Expression.Parameter(elementType, "");
             it = innerIt;
+             outerIt = it;
             Expression[] args = ParseArgumentList();
             it = outerIt;
             MethodBase signature;
@@ -1431,7 +1441,10 @@ namespace System.Linq.Dynamic
             }
             else
             {
-                args = new Expression[] { instance, Expression.Lambda(args[0], innerIt) };
+                 if (signature.Name == "Contains")
+			 args = new Expression[] { instance, args[0] };
+		 else
+			 args = new Expression[] { instance, Expression.Lambda(args[0], innerIt) };
             }
             return Expression.Call(typeof(Enumerable), signature.Name, typeArgs, args);
         }
@@ -2326,8 +2339,10 @@ namespace System.Linq.Dynamic
             d.Add("false", falseLiteral);
             d.Add("null", nullLiteral);
             d.Add(keywordIt, keywordIt);
+            d.Add(keywordOuterIt, keywordOuterIt);
             d.Add(keywordIif, keywordIif);
             d.Add(keywordNew, keywordNew);
+            
             foreach (Type type in predefinedTypes) d.Add(type.Name, type);
             return d;
         }
